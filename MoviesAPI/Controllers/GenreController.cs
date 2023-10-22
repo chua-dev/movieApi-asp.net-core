@@ -1,16 +1,19 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using MoviesAPI.Entities;
 using MoviesAPI.Services;
 
 namespace MoviesAPI.Controllers
 {
 	[Route("api/[controller]")]
+	[ApiController]
 	public class GenreController : ControllerBase
 	{
 		private readonly IRepository _repository;
+		private readonly ILogger<GenreController> logger;
 
-		public GenreController(IRepository repository)
+		public GenreController(IRepository repository, ILogger<GenreController> logger)
 		{
 			_repository = repository;
 		}
@@ -19,30 +22,41 @@ namespace MoviesAPI.Controllers
 		[HttpGet] // Configure request method
 		[HttpGet("list")] // api/genre/list, both shared
 		[HttpGet("/allgenre")] // /allgenre, overwrite base url
-		public List<Genre> GetAllGenres()
+		public async Task<List<Genre>> GetAllGenres()
 		{
-			return _repository.GetAllGenres();
+			logger.LogInformation("Getting all the genres");
+			return await _repository.GetAllGenres();
 		}
 
-		[HttpGet("{Id:int}/{param2=defaultvalue}")] //Path Parameters, = default value, : route constraint
-		public Genre Get(int Id, string param2)
+		[HttpGet("{Id:int}")] //Path Parameters, = default value, : route constraint
+		public ActionResult<Genre> Get(int Id,[BindRequired] string param2)
 		{
+			/*
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			} api controller replace this*/
+			logger.LogDebug("get by id method executing");
+
 			var genre = _repository.GetGenreById(Id);
 			if (genre == null)
 			{
-				//return NotFound();
+				logger.LogWarning($"Genre with Id {Id} not found");
+				return NotFound();
 			}
 			return genre;
 		}
 
 		[HttpPost]
-		public void PostGenres()
+		public ActionResult<Genre> PostGenres([FromBody] Genre genre)
 		{
 
+			_repository.AddGenre(genre);
+			return NoContent();
 		}
 
 		[HttpPut]
-		public void EditGenre()
+		public void EditGenre([FromBody] Genre genre)
 		{
 
 		}
